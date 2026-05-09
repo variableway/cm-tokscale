@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tokscale is a high-performance CLI tool and web dashboard for tracking AI coding assistant token usage and costs across multiple platforms (OpenCode, Claude Code, Codex CLI, Gemini CLI, Cursor IDE, Amp, Droid, OpenClaw). Monorepo with npm workspaces managed by Bun.
+Tokscale is a high-performance CLI tool and web dashboard for tracking AI coding assistant token usage and costs across multiple platforms (OpenCode, Claude Code, Codex CLI, Gemini CLI, Cursor IDE, Amp, Droid, OpenClaw, Kimi Code CLI). Monorepo with npm workspaces managed by Bun.
 
 ## Build & Development Commands
 
@@ -53,7 +53,7 @@ bun run dev:frontend                      # Next.js dev server
 - `scanner.rs` — File discovery with platform-specific path resolution
 - `parser.rs` — JSON parsing orchestration with simd-json
 - `aggregator.rs` — Parallel aggregation pipeline
-- `sessions/` — Platform parsers: `opencode.rs`, `claudecode.rs`, `codex.rs`, `gemini.rs`, `cursor.rs`, `amp.rs`, `droid.rs`, `openclaw.rs`, `pi.rs`
+- `sessions/` — Platform parsers: `opencode.rs`, `claudecode.rs`, `codex.rs`, `gemini.rs`, `cursor.rs`, `amp.rs`, `droid.rs`, `openclaw.rs`, `pi.rs`, `kimi.rs`
 - `pricing/` — `litellm.rs`, `openrouter.rs`, `aliases.rs` (model name resolution), `lookup.rs` (multi-strategy lookup), `cache.rs`
 
 ### Key CLI Modules (`packages/cli/src/`)
