@@ -122,6 +122,7 @@ interface FilterOptions {
   amp?: boolean;
   droid?: boolean;
   openclaw?: boolean;
+  kimi?: boolean;
 }
 
 interface DateFilterOptions {
@@ -447,6 +448,7 @@ async function main() {
     .option("--amp", "Show only Amp usage")
     .option("--droid", "Show only Factory Droid usage")
     .option("--openclaw", "Show only OpenClaw usage")
+    .option("--kimi", "Show only Kimi Code CLI usage")
     .option("--today", "Show only today's usage")
     .option("--week", "Show last 7 days")
     .option("--month", "Show current month")
@@ -484,6 +486,7 @@ async function main() {
     .option("--amp", "Show only Amp usage")
     .option("--droid", "Show only Factory Droid usage")
     .option("--openclaw", "Show only OpenClaw usage")
+    .option("--kimi", "Show only Kimi Code CLI usage")
     .option("--today", "Show only today's usage")
     .option("--week", "Show last 7 days")
     .option("--month", "Show current month")
@@ -521,6 +524,7 @@ async function main() {
     .option("--amp", "Show only Amp usage")
     .option("--droid", "Show only Factory Droid usage")
     .option("--openclaw", "Show only OpenClaw usage")
+    .option("--kimi", "Show only Kimi Code CLI usage")
     .option("--today", "Show only today's usage")
     .option("--week", "Show last 7 days")
     .option("--month", "Show current month")
@@ -546,6 +550,7 @@ async function main() {
     .option("--amp", "Include only Amp data")
     .option("--droid", "Include only Factory Droid data")
     .option("--openclaw", "Include only OpenClaw data")
+    .option("--kimi", "Include only Kimi Code CLI data")
     .option("--today", "Export only today's usage")
     .option("--week", "Export last 7 days")
     .option("--month", "Export current month")
@@ -591,12 +596,14 @@ async function main() {
         path.join(homeDir, ".moltbot", "agents"),
         path.join(homeDir, ".moldbot", "agents"),
       ];
+      const kimiShareDir = process.env.KIMI_SHARE_DIR || path.join(homeDir, ".kimi");
+      const kimiSessions = path.join(kimiShareDir, "sessions");
 
       let localMessages: ParsedMessages | null = null;
       try {
         localMessages = await parseLocalSourcesAsync({
           homeDir,
-          sources: ["opencode", "claude", "codex", "gemini", "amp", "droid", "openclaw"],
+          sources: ["opencode", "claude", "codex", "gemini", "amp", "droid", "openclaw", "kimi"],
         });
       } catch (e) {
         console.error(`Error: ${(e as Error).message}`);
@@ -696,6 +703,15 @@ async function main() {
           headlessPaths: [],
           headlessMessageCount: 0,
         },
+        {
+          source: "kimi",
+          label: "Kimi Code CLI",
+          sessionsPath: kimiSessions,
+          messageCount: localMessages.kimiCount ?? 0,
+          headlessSupported: false,
+          headlessPaths: [],
+          headlessMessageCount: 0,
+        },
       ];
 
       if (options.json) {
@@ -785,6 +801,7 @@ async function main() {
     .option("--amp", "Include only Amp data")
     .option("--droid", "Include only Factory Droid data")
     .option("--openclaw", "Include only OpenClaw data")
+    .option("--kimi", "Include only Kimi Code CLI data")
     .option("--today", "Show only today's usage")
     .option("--week", "Show last 7 days")
     .option("--month", "Show current month")
@@ -810,6 +827,7 @@ async function main() {
     .option("--amp", "Include only Amp data")
     .option("--droid", "Include only Factory Droid data")
     .option("--openclaw", "Include only OpenClaw data")
+    .option("--kimi", "Include only Kimi Code CLI data")
     .option("--no-spinner", "Disable loading spinner (for scripting)")
     .option("--short", "Display total tokens in abbreviated format (e.g., 7.14B)")
     .addOption(new Option("--agents", "Show Top OpenCode Agents (default)").conflicts("clients"))
@@ -855,6 +873,7 @@ async function main() {
     .option("--amp", "Include only Amp data")
     .option("--droid", "Include only Factory Droid data")
     .option("--openclaw", "Include only OpenClaw data")
+    .option("--kimi", "Include only Kimi Code CLI data")
     .option("--since <date>", "Start date (YYYY-MM-DD)")
     .option("--until <date>", "End date (YYYY-MM-DD)")
     .option("--year <year>", "Filter to specific year")
@@ -891,6 +910,7 @@ async function main() {
     .option("--amp", "Show only Amp usage")
     .option("--droid", "Show only Factory Droid usage")
     .option("--openclaw", "Show only OpenClaw usage")
+    .option("--kimi", "Show only Kimi Code CLI usage")
     .option("--today", "Show only today's usage")
     .option("--week", "Show last 7 days")
     .option("--month", "Show current month")
@@ -1019,6 +1039,7 @@ async function main() {
       .option("--amp", "Show only Amp usage")
       .option("--droid", "Show only Factory Droid usage")
       .option("--openclaw", "Show only OpenClaw usage")
+    .option("--kimi", "Show only Kimi Code CLI usage")
       .option("--today", "Show only today's usage")
       .option("--week", "Show last 7 days")
       .option("--month", "Show current month")
@@ -1047,7 +1068,7 @@ async function main() {
 }
 
 function getEnabledSources(options: FilterOptions): SourceType[] | undefined {
-  const hasFilter = options.opencode || options.claude || options.codex || options.gemini || options.cursor || options.amp || options.droid || options.openclaw;
+  const hasFilter = options.opencode || options.claude || options.codex || options.gemini || options.cursor || options.amp || options.droid || options.openclaw || options.kimi;
   if (!hasFilter) return undefined; // All sources
 
   const sources: SourceType[] = [];
@@ -1059,6 +1080,7 @@ function getEnabledSources(options: FilterOptions): SourceType[] | undefined {
   if (options.amp) sources.push("amp");
   if (options.droid) sources.push("droid");
   if (options.openclaw) sources.push("openclaw");
+  if (options.kimi) sources.push("kimi");
   return sources;
 }
 
@@ -1178,7 +1200,7 @@ async function showModelReport(options: FilterOptions & DateFilterOptions & { be
 
   let report: ModelReport;
   try {
-    const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, processingTimeMs: 0 };
+    const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, kimiCount: 0, processingTimeMs: 0 };
     report = await finalizeReportAsync({
       localMessages: localMessages || emptyMessages,
       includeCursor: includeCursor && (cursorSync.synced || hasCursorUsageCache()),
@@ -1407,7 +1429,7 @@ async function outputJsonReport(
     process.exit(1);
   }
 
-  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, processingTimeMs: 0 };
+  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, kimiCount: 0, processingTimeMs: 0 };
 
   if (reportType === "models") {
     const report = await finalizeReportAsync({
@@ -1707,7 +1729,7 @@ async function showModelByDateReport(
   spinner?.update(pc.gray("Generating graph data..."));
   const startTime = performance.now();
 
-  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, processingTimeMs: 0 };
+  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, kimiCount: 0, processingTimeMs: 0 };
 
   let graphData;
   try {
@@ -1851,7 +1873,7 @@ async function handleExportCommand(
   spinner?.update(pc.gray("Generating export data..."));
   const startTime = performance.now();
 
-  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, processingTimeMs: 0 };
+  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, kimiCount: 0, processingTimeMs: 0 };
 
   let graphData;
   try {
@@ -1955,7 +1977,7 @@ async function handleImportCommand(
   }
 
   const includeCursor = isCursorLoggedIn() || hasCursorUsageCache();
-  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, processingTimeMs: 0 };
+  const emptyMessages: ParsedMessages = { messages: [], opencodeCount: 0, claudeCount: 0, codexCount: 0, geminiCount: 0, ampCount: 0, droidCount: 0, openclawCount: 0, kimiCount: 0, processingTimeMs: 0 };
 
   let localGraphData;
   try {
@@ -2040,6 +2062,8 @@ function getSourceLabel(source: string): string {
       return "Amp";
     case "droid":
       return "Droid";
+    case "kimi":
+      return "Kimi";
     default:
       return source;
   }

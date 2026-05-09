@@ -18,6 +18,7 @@ pub enum SessionType {
     Droid,
     OpenClaw,
     Pi,
+    Kimi,
 }
 
 /// Result of scanning all session directories
@@ -32,6 +33,7 @@ pub struct ScanResult {
     pub droid_files: Vec<PathBuf>,
     pub openclaw_files: Vec<PathBuf>,
     pub pi_files: Vec<PathBuf>,
+    pub kimi_files: Vec<PathBuf>,
 }
 
 impl ScanResult {
@@ -46,6 +48,7 @@ impl ScanResult {
             + self.droid_files.len()
             + self.openclaw_files.len()
             + self.pi_files.len()
+            + self.kimi_files.len()
     }
 
     /// Get all files as a single vector
@@ -78,6 +81,9 @@ impl ScanResult {
         }
         for path in &self.pi_files {
             result.push((SessionType::Pi, path.clone()));
+        }
+        for path in &self.kimi_files {
+            result.push((SessionType::Kimi, path.clone()));
         }
 
         result
@@ -159,6 +165,7 @@ pub fn scan_directory(root: &str, pattern: &str) -> Vec<PathBuf> {
                 "T-*.json" => file_name.starts_with("T-") && file_name.ends_with(".json"),
                 "*.settings.json" => file_name.ends_with(".settings.json"),
                 "sessions.json" => file_name == "sessions.json",
+                "wire.jsonl" => file_name == "wire.jsonl",
                 _ => false,
             }
         })
@@ -180,6 +187,7 @@ pub fn scan_all_sources(home_dir: &str, sources: &[String]) -> ScanResult {
     let include_droid = include_all || sources.iter().any(|s| s == "droid");
     let include_openclaw = include_all || sources.iter().any(|s| s == "openclaw");
     let include_pi = include_all || sources.iter().any(|s| s == "pi");
+    let include_kimi = include_all || sources.iter().any(|s| s == "kimi");
 
     let headless_roots = headless_roots(home_dir);
 
@@ -261,6 +269,14 @@ pub fn scan_all_sources(home_dir: &str, sources: &[String]) -> ScanResult {
         tasks.push((SessionType::Pi, pi_path, "*.jsonl"));
     }
 
+    if include_kimi {
+        // Kimi Code CLI (Moonshot AI): ~/.kimi/sessions/*/*/wire.jsonl
+        let kimi_share_dir =
+            std::env::var("KIMI_SHARE_DIR").unwrap_or_else(|_| format!("{}/.kimi", home_dir));
+        let kimi_path = format!("{}/sessions", kimi_share_dir);
+        tasks.push((SessionType::Kimi, kimi_path, "wire.jsonl"));
+    }
+
     // Execute scans in parallel
     let scan_results: Vec<(SessionType, Vec<PathBuf>)> = tasks
         .into_par_iter()
@@ -282,6 +298,7 @@ pub fn scan_all_sources(home_dir: &str, sources: &[String]) -> ScanResult {
             SessionType::Droid => result.droid_files.extend(files),
             SessionType::OpenClaw => result.openclaw_files.extend(files),
             SessionType::Pi => result.pi_files.extend(files),
+            SessionType::Kimi => result.kimi_files.extend(files),
         }
     }
 
@@ -315,6 +332,7 @@ mod tests {
             droid_files: vec![],
             openclaw_files: vec![],
             pi_files: vec![PathBuf::from("e.jsonl")],
+            kimi_files: vec![],
         };
         assert_eq!(result.total_files(), 5);
     }
@@ -331,6 +349,7 @@ mod tests {
             droid_files: vec![],
             openclaw_files: vec![],
             pi_files: vec![PathBuf::from("f.jsonl")],
+            kimi_files: vec![],
         };
 
         let all = result.all_files();

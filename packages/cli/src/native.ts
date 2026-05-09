@@ -154,6 +154,7 @@ interface NativeParsedMessages {
   ampCount: number;
   droidCount?: number;
   openclawCount?: number;
+  kimiCount?: number;
   processingTimeMs: number;
 }
 
@@ -354,6 +355,7 @@ export interface ParsedMessages {
   ampCount: number;
   droidCount: number;
   openclawCount: number;
+  kimiCount: number;
   processingTimeMs: number;
 }
 

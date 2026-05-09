@@ -191,6 +191,7 @@ export interface ParsedMessages {
   droidCount: number
   openclawCount: number
   piCount: number
+  kimiCount: number
   processingTimeMs: number
 }
 
